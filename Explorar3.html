@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AR Anatomía - Órganos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #2ecc71;
+      --secondary: #3498db;
+      --accent: #fdd835;
+      --bg-dark: #121212;
+      --bg-light: #ffffff;
+      --card-dark: #1e1e1e;
+      --card-light: #f9f9f9;
+      --text-dark: #f5f5f5;
+      --text-light: #333333;
+    }
+
+    body {
+      margin: 0;
+      font-family: Poppins, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-dark);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light-theme {
+      background: var(--bg-light);
+      color: var(--text-light);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 30px;
+      background: rgba(0, 0, 0, 0.7);
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 100;
+      box-sizing: border-box;
+    }
+
+    body.light-theme .header {
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 600;
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .back {
+      color: inherit;
+      text-decoration: none;
+      font-size: 1rem;
+    }
+
+    .main {
+      padding: 120px 20px 40px;
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .main h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .info-card {
+      background: var(--card-dark);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+      margin: 20px 0;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light-theme .info-card {
+      background: var(--card-light);
+      color: var(--text-light);
+    }
+
+    .info-card h2 {
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+
+    .model-container {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      margin-bottom: 20px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      margin: 0 10px;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: background 0.3s, color 0.3s, transform 0.2s;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+    }
+
+    .btn-primary {
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+      color: #fff;
+    }
+
+    .btn-qr {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .qr-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 200;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .qr-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    #qr-reader {
+      width: 100%;
+      max-width: 350px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #qr-reader__dashboard_section_csr button {
+      border-radius: 20px !important;
+      padding: 8px 16px !important;
+      background: var(--accent) !important;
+      color: black !important;
+      font-family: Poppins, sans-serif !important;
+    }
+    
+    #qr-reader__dashboard_section_fsr button {
+      border-radius: 20px !important;
+      padding: 8px 16px !important;
+      background: var(--accent) !important;
+      color: black !important;
+      font-family: Poppins, sans-serif !important;
+    }
+
+    #qr-reader__scan_region img {
+      display: none;
+    }
+
+    .qr-result {
+      background: var(--card-dark);
+      color: var(--text-dark);
+      width: 100%;
+      max-width: 350px;
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 12px;
+      word-break: break-all;
+      text-align: left;
+    }
+
+    body.light-theme .qr-result {
+      background: var(--card-light);
+      color: var(--text-light);
+    }
+
+    .qr-buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .close-qr {
+      background: var(--card-dark);
+      color: var(--text-dark);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    body.light-theme .close-qr {
+      background: var(--card-light);
+      color: var(--text-light);
+    }
+
+    .scan-again {
+      background: var(--accent);
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    .qr-status {
+      margin: 10px 0;
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .result-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: var(--primary);
+    }
+
+    .result-content {
+      margin-top: 5px;
+    }
+
+    .ar-info-overlay {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(30, 30, 30, 0.8);
+      color: var(--text-dark);
+      padding: 15px;
+      border-radius: 12px;
+      max-width: 250px;
+      font-size: 0.9rem;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+
+    body.light-theme .ar-info-overlay {
+      background: rgba(249, 249, 249, 0.8);
+      color: var(--text-light);
+    }
+
+    .ar-info-overlay h3 {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    .ar-info-overlay ul {
+      margin: 0;
+      padding-left: 20px;
+      text-align: left;
+    }
+
+    .ar-error, .camera-error {
+      display: none;
+      background: var(--card-dark);
+      color: var(--text-dark);
+      padding: 15px;
+      border-radius: 12px;
+      margin: 10px 0;
+      font-size: 0.9rem;
+    }
+
+    body.light-theme .ar-error, body.light-theme .camera-error {
+      background: var(--card-light);
+      color: var(--text-light);
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 10px 15px;
+      }
+      
+      .main {
+        padding: 100px 15px 30px;
+      }
+      
+      .btn {
+        padding: 10px 18px;
+        margin: 5px;
+        font-size: 0.9rem;
+      }
+      
+      .model-container {
+        height: 400px;
+      }
+
+      .ar-info-overlay {
+        top: 10px;
+        right: 10px;
+        max-width: 200px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo"><i class="fas fa-heartbeat"></i> AR Órganos</div>
+    <a href="oficial.html" class="back"><i class="fas fa-arrow-left"></i> Volver</a>
+    <button class="btn btn-primary" id="themeToggleSmall">Modo Claro</button>
+  </header>
+
+  <div class="main">
+    <h1>Corazón Humano 3D</h1>
+    <p class="info-card">Sumérgete en la estructura y función del órgano que late 100,000 veces al día. Explora sus válvulas, ventrículos y arterias de manera interactiva.</p>
+    
+    <div class="model-container">
+      <model-viewer id="heartModel" src="modelos ar/16_week_fetal_heart.glb" alt="Modelo 3D del Corazón" camera-controls auto-rotate ar ar-modes="webxr scene-viewer quick-look" ios-src="modelos ar/16_week_fetal_heart.usdz">
+        <button slot="ar-button" class="btn btn-primary"><i class="fas fa-vr-cardboard"></i> Ver en AR</button>
+        <div class="ar-info-overlay" id="arInfoOverlay" style="display: none;">
+          <h3>Corazón Humano</h3>
+          <ul>
+            <li><strong>Función:</strong> Bombear sangre oxigenada.</li>
+            <li><strong>Ventrículos:</strong> Cámaras principales.</li>
+            <li><strong>Válvulas:</strong> Controlan el flujo.</li>
+          </ul>
+        </div>
+      </model-viewer>
+      
+      <audio id="heartbeatAudio" loop preload="auto" style="display:none;">
+        <source src="https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3" type="audio/mp3">
+        Tu navegador no soporta el elemento de audio.
+      </audio>
+      
+      <div id="audioControls" style="margin-top: 15px;">
+        <button id="playAudio" class="btn btn-primary"><i class="fas fa-play"></i> Reproducir Latido</button>
+        <button id="stopAudio" class="btn btn-primary" style="display:none;"><i class="fas fa-stop"></i> Detener Latido</button>
+      </div>
+      
+      <div class="ar-error" id="arError">
+        Lo sentimos, tu dispositivo o navegador no soporta realidad aumentada. Intenta con otro dispositivo o actualiza tu navegador.
+      </div>
+      <div class="camera-error" id="cameraError">
+        No se pudo acceder a la cámara. Por favor, otorga permisos de cámara en tu navegador y asegúrate de estar en una conexión segura (HTTPS).
+      </div>
+    </div>
+
+    <div>
+      <button class="btn btn-primary" id="detailBtn"><i class="fas fa-info-circle"></i> Más Detalles</button>
+      <button class="btn btn-qr" id="scanBtn"><i class="fas fa-qrcode"></i> Escanear QR para AR</button>
+    </div>
+
+    <div class="info-card" id="details" style="display:none;">
+      <h2>Funciones Principales</h2>
+      <ul style="text-align:left;">
+        <li>Bombear sangre oxigenada a todo el cuerpo.</li>
+        <li>Regular la presión arterial.</li>
+        <li>Separar sangre oxigenada y desoxigenada.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="qr-overlay" id="qrOverlay">
+    <div id="qr-reader"></div>
+    <div class="qr-status" id="qrStatus">Esperando iniciar el escáner...</div>
+    <div class="qr-result" id="qrResult" style="display:none;">
+      <div class="result-title">Contenido del QR:</div>
+      <div class="result-content" id="qrContent">-</div>
+    </div>
+    <div class="qr-buttons">
+      <button class="scan-again" id="scanAgain" style="display:none;"><i class="fas fa-redo"></i> Escanear Otro</button>
+      <button class="close-qr" id="closeQr"><i class="fas fa-times"></i> Cerrar</button>
+    </div>
+  </div>
+
+  <script>
+    // Verificar contexto seguro (HTTPS)
+    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+      alert('Esta aplicación requiere HTTPS para acceder a la cámara y realidad aumentada. Por favor, accede desde un servidor seguro.');
+    }
+
+    // Modo claro/oscuro
+    const themeBtn = document.getElementById('themeToggleSmall');
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('light-theme');
+      themeBtn.textContent = document.body.classList.contains('light-theme') ? 'Modo Oscuro' : 'Modo Claro';
+    });
+
+    // Mostrar/ocultar detalles
+    document.getElementById('detailBtn').addEventListener('click', () => {
+      const details = document.getElementById('details');
+      details.style.display = details.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Código QR especial para activar la experiencia AR
+    const QR_AR_CODE = "HEART3DAR";
+    
+    // Audio del corazón
+    const heartbeatAudio = document.getElementById('heartbeatAudio');
+    const playAudioBtn = document.getElementById('playAudio');
+    const stopAudioBtn = document.getElementById('stopAudio');
+    const audioControls = document.getElementById('audioControls');
+    
+    // Control de audio
+    playAudioBtn.addEventListener('click', () => {
+      heartbeatAudio.play();
+      playAudioBtn.style.display = 'none';
+      stopAudioBtn.style.display = 'inline-block';
+    });
+    
+    stopAudioBtn.addEventListener('click', () => {
+      heartbeatAudio.pause();
+      heartbeatAudio.currentTime = 0;
+      playAudioBtn.style.display = 'inline-block';
+      stopAudioBtn.style.display = 'none';
+    });
+
+    // Manejo de AR
+    const heartModel = document.getElementById('heartModel');
+    const arInfoOverlay = document.getElementById('arInfoOverlay');
+    const arError = document.getElementById('arError');
+
+    // Función para activar la experiencia AR
+    function activateARExperience() {
+      arError.style.display = 'none';
+      heartModel.activateAR();
+      arInfoOverlay.style.display = 'block';
+      heartbeatAudio.play();
+      playAudioBtn.style.display = 'none';
+      stopAudioBtn.style.display = 'inline-block';
+      const infoCard = document.querySelector('.info-card');
+      infoCard.innerHTML = '<h2 style="color: var(--accent);">¡AR Activado!</h2>' +
+                          '<p>Explora el corazón en realidad aumentada. Escucha el latido y observa los detalles en el overlay.</p>';
+    }
+
+    // Manejar estado de AR
+    heartModel.addEventListener('ar-status', (event) => {
+      if (event.detail.status === 'failed') {
+        arError.style.display = 'block';
+        arInfoOverlay.style.display = 'none';
+        heartbeatAudio.pause();
+        heartbeatAudio.currentTime = 0;
+        playAudioBtn.style.display = 'inline-block';
+        stopAudioBtn.style.display = 'none';
+      } else if (event.detail.status === 'active') {
+        arError.style.display = 'none';
+        arInfoOverlay.style.display = 'block';
+      }
+    });
+
+    // Escáner QR
+    const qrOverlay = document.getElementById('qrOverlay');
+    const scanBtn = document.getElementById('scanBtn');
+    const closeQr = document.getElementById('closeQr');
+    const scanAgain = document.getElementById('scanAgain');
+    const qrStatus = document.getElementById('qrStatus');
+    const qrResult = document.getElementById('qrResult');
+    const qrContent = document.getElementById('qrContent');
+    const cameraError = document.getElementById('cameraError');
+    let html5QrcodeScanner;
+
+    async function startQrScanner() {
+      qrOverlay.classList.add('active');
+      qrResult.style.display = 'none';
+      scanAgain.style.display = 'none';
+      qrStatus.textContent = 'Iniciando cámara...';
+      cameraError.style.display = 'none';
+
+      try {
+        // Obtener lista de cámaras disponibles
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          html5QrcodeScanner = new Html5Qrcode("qr-reader");
+          // Usar la primera cámara disponible (permite front o rear)
+          await html5QrcodeScanner.start(
+            devices[0].id,
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+              qrStatus.textContent = '¡Código QR detectado!';
+              
+              if (decodedText === QR_AR_CODE) {
+                qrContent.innerHTML = "<strong>¡Código AR detectado!</strong><br>Activando experiencia de realidad aumentada...";
+                qrResult.style.display = 'block';
+                
+                setTimeout(() => {
+                  if (html5QrcodeScanner) {
+                    html5QrcodeScanner.stop().catch(err => console.log("Error al cerrar el escáner:", err));
+                  }
+                  qrOverlay.classList.remove('active');
+                  activateARExperience();
+                }, 2000);
+              } else {
+                let formattedContent = '';
+                if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+                  formattedContent = `<a href="${decodedText}" target="_blank">${decodedText}</a>`;
+                } else if (decodedText.includes('@') && decodedText.includes('.')) {
+                  formattedContent = `<a href="mailto:${decodedText}">${decodedText}</a>`;
+                } else {
+                  formattedContent = decodedText;
+                }
+                
+                qrContent.innerHTML = formattedContent;
+                qrResult.style.display = 'block';
+                scanAgain.style.display = 'block';
+                html5QrcodeScanner.stop();
+              }
+            },
+            (error) => {
+              console.warn(`Fallo en el escaneo: ${error}`);
+            }
+          );
+        } else {
+          qrStatus.textContent = 'No se encontraron cámaras.';
+          cameraError.style.display = 'block';
+        }
+      } catch (err) {
+        qrStatus.textContent = 'Error al iniciar la cámara.';
+        cameraError.style.display = 'block';
+        console.error('Error al acceder a la cámara:', err);
+      }
+    }
+
+    scanBtn.addEventListener('click', startQrScanner);
+
+    // Escanear otro código QR
+    scanAgain.addEventListener('click', startQrScanner);
+
+    // Cerrar el escáner
+    closeQr.addEventListener('click', () => {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+          console.log("Escáner cerrado.");
+        }).catch(err => {
+          console.log("Error al cerrar el escáner:", err);
+        });
+      }
+      qrOverlay.classList.remove('active');
+      cameraError.style.display = 'none';
+    });
+  </script>
+</body>
+</html>

@@ -69,5 +69,6 @@
         "tipo",
         "través",
         "única"
-    ]
+    ],
+    "liveServer.settings.port": 5502
 }

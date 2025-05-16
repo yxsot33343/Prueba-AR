@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escáner de Código QR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #4285F4;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        #reader {
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            text-align: left;
+            min-height: 80px;
+            word-break: break-all;
+        }
+        .result-container {
+            margin-top: 20px;
+        }
+        .button {
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #3567D6;
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-bottom: 15px;
+            font-style: italic;
+            color: #666;
+        }
+        .text-content {
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Escáner de Código QR</h1>
+    
+    <div class="container">
+        <div class="status" id="status">Esperando iniciar el escáner...</div>
+        
+        <div id="reader"></div>
+        
+        <div>
+            <button class="button" id="startButton">Iniciar Escáner</button>
+            <button class="button" id="stopButton" disabled>Detener Escáner</button>
+        </div>
+        
+        <div class="result-container">
+            <h2>Resultado:</h2>
+            <div id="result">
+                <p>El contenido del código QR aparecerá aquí...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Coloca un código QR frente a la cámara para escanearlo</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const html5QrCode = new Html5Qrcode("reader");
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            const resultElement = document.getElementById('result');
+            const statusElement = document.getElementById('status');
+            let scanning = false;
+
+            // Función para iniciar el escaneo
+            function startScanning() {
+                Html5Qrcode.getCameras().then(devices => {
+                    if (devices && devices.length) {
+                        statusElement.textContent = "Acceso a la cámara concedido. Iniciando escáner...";
+                        
+                        const config = { 
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0
+                        };
+                        
+                        html5QrCode.start(
+                            { facingMode: "environment" }, // Prefiere la cámara trasera
+                            config,
+                            onScanSuccess,
+                            onScanFailure
+                        ).then(() => {
+                            scanning = true;
+                            statusElement.textContent = "Escáner activo. Apunta a un código QR.";
+                            startButton.disabled = true;
+                            stopButton.disabled = false;
+                        }).catch(err => {
+                            statusElement.textContent = `Error al iniciar el escáner: ${err}`;
+                        });
+                    } else {
+                        statusElement.textContent = "No se detectaron cámaras.";
+                    }
+                }).catch(err => {
+                    statusElement.textContent = `Error al acceder a la cámara: ${err}`;
+                });
+            }
+
+            // Función que se ejecuta cuando se detecta un código QR
+            function onScanSuccess(decodedText, decodedResult) {
+                console.log(`Código escaneado: ${decodedText}`, decodedResult);
+                
+                // Determinar el tipo de contenido y formatearlo adecuadamente
+                let formattedContent = '';
+                
+                if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+                    formattedContent = `<p>URL detectada:</p>
+                    <p class="text-content"><a href="${decodedText}" target="_blank">${decodedText}</a></p>`;
+                } else if (decodedText.includes('@') && decodedText.includes('.')) {
+                    formattedContent = `<p>Email detectado:</p>
+                    <p class="text-content"><a href="mailto:${decodedText}">${decodedText}</a></p>`;
+                } else if (!isNaN(decodedText) && decodedText.length >= 10) {
+                    formattedContent = `<p>Número detectado:</p>
+                    <p class="text-content">${decodedText}</p>`;
+                } else {
+                    formattedContent = `<p>Texto detectado:</p>
+                    <p class="text-content">${decodedText}</p>`;
+                }
+                
+                resultElement.innerHTML = formattedContent;
+                
+                // Opcional: pausar el escáner después de una detección exitosa
+                // html5QrCode.pause();
+            }
+
+            // Función que maneja los errores de escaneo
+            function onScanFailure(error) {
+                // console.warn(`Fallo en el escaneo: ${error}`);
+                // No mostramos errores al usuario para evitar spam en la consola
+            }
+
+            // Iniciar el escáner cuando se hace clic en el botón
+            startButton.addEventListener('click', startScanning);
+
+            // Detener el escáner
+            stopButton.addEventListener('click', () => {
+                if (scanning) {
+                    html5QrCode.stop().then(() => {
+                        statusElement.textContent = "Escáner detenido.";
+                        startButton.disabled = false;
+                        stopButton.disabled = true;
+                        scanning = false;
+                    }).catch(err => {
+                        statusElement.textContent = `Error al detener el escáner: ${err}`;
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
